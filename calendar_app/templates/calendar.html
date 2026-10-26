@@ -1,28 +1,77 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Python Calendar</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6f8; color: #333; }
-        .container { max-width: 600px; margin: auto; }
-        .event-card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Calendar</title>
+    <link rel="stylesheet" href="{% static 'calendar_app/calendar.css' %}">
 </head>
 <body>
-    <div class="container">
-        <h1>My Event Calendar</h1>
-        <p>Managed via Django, SQLite, GitHub, and AWS.</p>
+    <div class="app-shell">
+        <header class="top-bar">
+            <a class="brand" href="{% url 'calendar' %}">Calendar</a>
+        </header>
 
-        {% for event in events %}
-            <div class="event-card">
-                <h3>{{ event.title }}</h3>
-                <p><strong>Date:</strong> {{ event.date }}</p>
-                <p>{{ event.description }}</p>
+        <main>
+            <section class="page-heading">
+                <h1>{{ today|date:'F j, Y' }}</h1>
+            </section>
+
+            <div class="planner-layout">
+                <section class="agenda" aria-labelledby="agenda-title">
+                    <h2 id="agenda-title">Upcoming events</h2>
+
+                    <div class="event-list">
+                        {% for event in events %}
+                        <article class="event-row">
+                            <div class="date-tile">
+                                <span>{{ event.date|date:'M' }}</span>
+                                <strong>{{ event.date|date:'j' }}</strong>
+                            </div>
+                            <div class="event-summary">
+                                <h3>{{ event.title }}</h3>
+                                <p class="event-date">{{ event.date|date:'l, F j' }}</p>
+                                {% if event.description %}
+                                <p class="event-notes">{{ event.description }}</p>
+                                {% endif %}
+                            </div>
+                        </article>
+                        {% empty %}
+                        <div class="empty-state">
+                            <p>No upcoming events yet.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <aside class="calendar-sidebar">
+                    <section class="month-card" aria-labelledby="month-title">
+                        <h2 id="month-title">{{ today|date:'F Y' }}</h2>
+                        <div class="month-grid">
+                            <span class="weekday">Sun</span>
+                            <span class="weekday">Mon</span>
+                            <span class="weekday">Tue</span>
+                            <span class="weekday">Wed</span>
+                            <span class="weekday">Thu</span>
+                            <span class="weekday">Fri</span>
+                            <span class="weekday">Sat</span>
+                            {% for week in weeks %}
+                                {% for day in week %}
+                                    {% if day == 0 %}
+                                    <span class="day" aria-hidden="true"></span>
+                                    {% elif day == today.day %}
+                                    <span class="day today" aria-current="date">{{ day }}</span>
+                                    {% else %}
+                                    <span class="day">{{ day }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </section>
+                </aside>
             </div>
-        {% empty %}
-            <p>No events scheduled yet. Add some via the Django shell!</p>
-        {% endfor %}
+        </main>
     </div>
 </body>
 </html>

@@ -1,0 +1,163 @@
+/* Main colors and page setup. */
+:root {
+    --page: #f8faf9;
+    --ink: #243b34;
+    --muted: #6e7e76;
+    --line: #e3eae5;
+    --green: #346956;
+    --mint: #edf3ef;
+    --calendar-line: #d1d5d3;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    line-height: 1.5;
+}
+h1, h2, h3, p { margin: 0; }
+.app-shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px;
+}
+
+/* Header and page introduction. */
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    min-height: 95px;
+    border-bottom: 1px solid var(--line);
+}
+.brand {
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -1px;
+}
+.page-heading {
+    padding: 60px 0 50px;
+}
+h1 {
+    margin: 14px 0;
+    font-family: Georgia, serif;
+    font-size: 48px;
+    font-weight: 400;
+    letter-spacing: -1.5px;
+    line-height: 1.2;
+}
+
+/* Event list on the left. */
+.planner-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 40px;
+    align-items: start;
+}
+.agenda h2 {
+    margin: 5px 0 25px;
+    font-size: 24px;
+    font-weight: 500;
+}
+.event-list { border-top: 1px solid var(--line); }
+.event-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--line);
+}
+.date-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 60px;
+    min-height: 68px;
+    background: var(--mint);
+    border-radius: 10px;
+}
+.date-tile span {
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.date-tile strong { font-size: 25px; font-weight: 500; }
+.event-summary {
+    min-width: 0;
+    padding-top: 3px;
+    overflow-wrap: anywhere;
+}
+.event-summary h3 { font-size: 16px; font-weight: 500; }
+.event-date, .event-notes {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 12px;
+}
+.event-notes { margin-top: 12px; white-space: pre-line; }
+.empty-state { padding: 35px 0; }
+.empty-state p { margin-top: 8px; color: var(--muted); font-size: 13px; }
+
+/* Larger calendar with gray lines between the days. */
+.calendar-sidebar {
+    min-width: 0;
+    width: 100%;
+}
+.month-card {
+    padding: 24px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+}
+.month-card h2 { margin-bottom: 22px; font-size: 22px; font-weight: 500; }
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border-top: 1px solid var(--calendar-line);
+    border-left: 1px solid var(--calendar-line);
+    text-align: center;
+}
+.month-grid > span {
+    border-right: 1px solid var(--calendar-line);
+    border-bottom: 1px solid var(--calendar-line);
+}
+.weekday {
+    padding: 10px 0;
+    background: var(--page);
+    color: var(--muted);
+    font-size: 12px;
+}
+.day {
+    display: flex;
+    align-items: flex-start;
+    min-height: 80px;
+    padding: 10px;
+    font-size: 16px;
+}
+.today {
+    background: var(--mint);
+    color: var(--green);
+    font-weight: 600;
+}
+
+@media (max-width: 950px) {
+    .planner-layout { grid-template-columns: 1fr; gap: 36px; }
+}
+
+/* Stack the layout on smaller screens. */
+@media (max-width: 750px) {
+    .app-shell { padding: 0 22px; }
+    .page-heading {
+        padding: 36px 0;
+    }
+    h1 { font-size: 36px; letter-spacing: -1px; }
+    .month-card { padding: 16px; }
+    .day { min-height: 60px; padding: 7px; font-size: 14px; }
+    .weekday { font-size: 11px; }
+}
