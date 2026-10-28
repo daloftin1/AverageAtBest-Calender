@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Event
+from .models import CalendarShare, Event
 
 
 class CalendarAuthenticationTests(TestCase):
@@ -37,3 +37,31 @@ class CalendarAuthenticationTests(TestCase):
         response = self.client.get(reverse('calendar'))
         self.assertContains(response, 'First event')
         self.assertNotContains(response, 'Second event')
+
+    def test_individual_event_can_be_shared(self):
+        owner = User.objects.create_user('owner', password='pass')
+        viewer = User.objects.create_user('viewer', password='pass')
+        event = Event.objects.create(user=owner, title='Shared event', date='2026-11-01')
+        event.shared_with.add(viewer)
+
+        self.client.force_login(viewer)
+        response = self.client.get(reverse('calendar'))
+        self.assertContains(response, 'Shared event')
+
+    def test_calendar_edit_permission_is_enforced(self):
+        owner = User.objects.create_user('owner', password='pass')
+        viewer = User.objects.create_user('viewer', password='pass')
+        event = Event.objects.create(user=owner, title='Owner event', date='2026-11-01')
+        CalendarShare.objects.create(
+            owner=owner, viewer=viewer, permission=CalendarShare.READ
+        )
+
+        self.client.force_login(viewer)
+        response = self.client.get(reverse('edit_event', args=[event.id]))
+        self.assertRedirects(response, reverse('calendar'))
+
+        share = CalendarShare.objects.get(owner=owner, viewer=viewer)
+        share.permission = CalendarShare.EDIT
+        share.save()
+        response = self.client.get(reverse('edit_event', args=[event.id]))
+        self.assertEqual(response.status_code, 200)
