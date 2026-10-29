@@ -1,0 +1,29 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy to EC2 via SSH
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                host: ${{ secrets.EC2_HOST }}
+                username: ${{ secrets.EC2_USER }}
+                key: ${{ secrets.EC2_SSH_KEY }}
+                script: |
+                  cd ~/aws-test
+                  git pull origin main
+                  
+                  # Activate your Miniconda environment and run migrations
+                  export PATH="$HOME/miniconda3/bin:$PATH"
+                  source ~/miniconda3/etc/profile.d/conda.sh
+                  conda activate dj_web
+                  
+                  python manage.py migrate
+                  
+                  # If you are running your server inside a screen session, 
+                  # you can optionally restart it here, or let runserver reload automatically.
