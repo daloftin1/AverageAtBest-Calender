@@ -39,6 +39,31 @@ h1, h2, h3, p { margin: 0; }
     font-weight: 600;
     letter-spacing: -1px;
 }
+.account-menu {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-left: auto;
+    font-size: 13px;
+}
+.account-menu button {
+    border: 0;
+    background: transparent;
+    color: var(--green);
+    font: inherit;
+    cursor: pointer;
+}
+.calendar-actions, .event-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    color: var(--green);
+    font-size: 13px;
+}
+.calendar-actions { margin-bottom: 20px; }
+.event-actions { margin-top: 12px; }
+.shared-calendars { margin-bottom: 16px; color: var(--muted); font-size: 13px; }
 .page-heading {
     padding: 60px 0 50px;
 }

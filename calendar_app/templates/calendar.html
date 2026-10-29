@@ -11,6 +11,13 @@
     <div class="app-shell">
         <header class="top-bar">
             <a class="brand" href="{% url 'calendar' %}">Calendar</a>
+            <div class="account-menu">
+                <span>{{ user.username }}</span>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit">Log out</button>
+                </form>
+            </div>
         </header>
 
         <main>
@@ -20,7 +27,18 @@
 
             <div class="planner-layout">
                 <section class="agenda" aria-labelledby="agenda-title">
-                    <h2 id="agenda-title">Upcoming events</h2>
+                    <h2 id="agenda-title">Events</h2>
+                    <div class="calendar-actions">
+                        <a href="{% url 'add_event' %}">Add event</a>
+                        <a href="{% url 'share_calendar' %}">Share calendar</a>
+                    </div>
+                    {% if incoming_calendar_shares %}
+                    <p class="shared-calendars">Shared with you:
+                        {% for share in incoming_calendar_shares %}
+                            {{ share.owner.username }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+                    {% endif %}
 
                     <div class="event-list">
                         {% for event in events %}
@@ -32,14 +50,25 @@
                             <div class="event-summary">
                                 <h3>{{ event.title }}</h3>
                                 <p class="event-date">{{ event.date|date:'l, F j' }}</p>
+                                {% if event.user != user %}
+                                <p class="event-date">From {{ event.user.username }}'s calendar</p>
+                                {% endif %}
                                 {% if event.description %}
                                 <p class="event-notes">{{ event.description }}</p>
                                 {% endif %}
+                                <div class="event-actions">
+                                    {% if event.user == user %}
+                                    <a href="{% url 'share_event' event.id %}">Share event</a>
+                                    {% endif %}
+                                    {% if event.id in editable_event_ids %}
+                                    <a href="{% url 'edit_event' event.id %}">Edit</a>
+                                    {% endif %}
+                                </div>
                             </div>
                         </article>
                         {% empty %}
                         <div class="empty-state">
-                            <p>No upcoming events yet.</p>
+                            <p>No events yet.</p>
                         </div>
                         {% endfor %}
                     </div>

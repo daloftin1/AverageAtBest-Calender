@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html><head><title>Share Event</title></head><body>
+<h1>Share “{{ event.title }}”</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Share event</button>
+</form>
+<h2>Shared with</h2>
+<ul>
+{% for user in shared_users %}
+    <li>{{ user.username }} <a href="{% url 'unshare_event' event.id user.id %}">Remove</a></li>
+{% empty %}
+    <li>This event is not shared with anyone.</li>
+{% endfor %}
+</ul>
+<p><a href="{% url 'calendar' %}">Back to calendar</a></p>
+</body></html>
