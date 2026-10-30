@@ -16,6 +16,7 @@ jobs:
                 key: ${{ secrets.EC2_SSH_KEY }}
                 script: |
                   cd ~/aws-test
+                  git reset --hard HEAD
                   git pull origin main
                   
                   # Activate your Miniconda environment and run migrations
@@ -23,7 +24,5 @@ jobs:
                   source ~/miniconda3/etc/profile.d/conda.sh
                   conda activate dj_web
                   
+                  python manage.py makemigrations
                   python manage.py migrate
-                  
-                  # If you are running your server inside a screen session, 
-                  # you can optionally restart it here, or let runserver reload automatically.
