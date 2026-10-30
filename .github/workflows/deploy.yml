@@ -17,8 +17,8 @@ jobs:
                 script: |
                   cd ~/aws-test
                   
-                  # Use the Personal Access Token stored in GitHub Secrets for seamless pulling
-                  git remote set-url origin https://samantinoro:${{ secrets.GH_PAT }}@github.com/daloftin1/AverageAtBest-Calender.git
+                  # Ensure we are using the clean SSH remote URL
+                  git remote set-url origin git@github.com:daloftin1/AverageAtBest-Calender.git
                   
                   git reset --hard HEAD
                   git pull origin main
