@@ -17,9 +17,9 @@ jobs:
                 script: |
                   cd ~/aws-test
                   
-                  # Set remote URL using HTTPS with your GitHub Personal Access Token
-                  # Replace YOUR_PAT with your actual GitHub classic Personal Access Token
+                  # Use the Personal Access Token stored in GitHub Secrets for seamless pulling
                   git remote set-url origin https://samantinoro:${{ secrets.GH_PAT }}@github.com/daloftin1/AverageAtBest-Calender.git
+                  
                   git reset --hard HEAD
                   git pull origin main
                   
