@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Calendar{% endblock %}</title>
+    <!-- Load the saved theme before the page is drawn. -->
+    <script src="{% static 'calendar_app/theme.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'calendar_app/calendar.css' %}">
+    <link rel="stylesheet" href="{% static 'calendar_app/auth.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Every page uses the same header and theme switch. -->
+        <header class="top-bar">
+            <a class="brand" href="{% url 'calendar' %}">Calendar</a>
+            <div class="header-actions">
+                <button id="theme-toggle" class="theme-toggle" type="button"
+                        role="switch" aria-checked="false" disabled>
+                    <span class="theme-track" aria-hidden="true"><span class="theme-knob"></span></span>
+                    <span>Dark mode</span>
+                </button>
+                {% if user.is_authenticated %}
+                <div class="account-menu">
+                    <details class="profile-menu" id="profile-menu">
+                        <summary class="profile-button" aria-label="Profile for {{ user.username }}"
+                                 aria-controls="profile-panel">
+                            <span class="profile-avatar" aria-hidden="true">{{ user.username|first|upper }}</span>
+                            <span class="profile-name">{{ user.username }}</span>
+                            <span class="profile-chevron" aria-hidden="true"></span>
+                        </summary>
+                        <div class="profile-panel" id="profile-panel">
+                            <p class="profile-label">Signed in as</p>
+                            <strong class="profile-username">{{ user.username }}</strong>
+                            <p class="profile-id">Profile ID: {{ user.id }}</p>
+                        </div>
+                    </details>
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button class="button button-compact button-secondary" type="submit">Log out</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

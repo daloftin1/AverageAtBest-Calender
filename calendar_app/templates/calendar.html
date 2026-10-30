@@ -1,106 +1,87 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Calendar</title>
-    <link rel="stylesheet" href="{% static 'calendar_app/calendar.css' %}">
-</head>
-<body>
-    <div class="app-shell">
-        <header class="top-bar">
-            <a class="brand" href="{% url 'calendar' %}">Calendar</a>
-            <div class="account-menu">
-                <span>{{ user.username }}</span>
-                <form action="{% url 'logout' %}" method="post">
-                    {% csrf_token %}
-                    <button type="submit">Log out</button>
-                </form>
-            </div>
-        </header>
+{% extends "base.html" %}
 
-        <main>
-            <section class="page-heading">
-                <h1>{{ today|date:'F j, Y' }}</h1>
+{% block content %}
+<main>
+    <section class="page-heading">
+        <h1>{{ today|date:'F j, Y' }}</h1>
+        <div class="calendar-actions">
+            <a class="button button-primary" href="{% url 'add_event' %}">Add event</a>
+            <a class="button button-secondary" href="{% url 'share_calendar' %}">Share calendar</a>
+        </div>
+    </section>
+
+    <div class="planner-layout">
+        <section class="agenda" aria-labelledby="agenda-title">
+            <h2 id="agenda-title">Events</h2>
+            {% if incoming_calendar_shares %}
+            <p class="shared-calendars">Shared with you:
+                {% for share in incoming_calendar_shares %}
+                    {{ share.owner.username }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </p>
+            {% endif %}
+
+            <div class="event-list">
+                {% for event in events %}
+                <article class="event-row">
+                    <div class="date-tile">
+                        <span>{{ event.date|date:'M' }}</span>
+                        <strong>{{ event.date|date:'j' }}</strong>
+                    </div>
+                    <div class="event-summary">
+                        <h3>{{ event.title }}</h3>
+                        <p class="event-date">{{ event.date|date:'l, F j' }}</p>
+                        {% if event.user != user %}
+                        <p class="event-date">From {{ event.user.username }}'s calendar</p>
+                        {% endif %}
+                        {% if event.description %}
+                        <p class="event-notes">{{ event.description }}</p>
+                        {% endif %}
+                        <div class="event-actions">
+                            {% if event.user == user %}
+                            <a class="button button-compact button-soft" href="{% url 'share_event' event.id %}"
+                               aria-label="Share event: {{ event.title }}">Share event</a>
+                            {% endif %}
+                            {% if event.id in editable_event_ids %}
+                            <a class="button button-compact button-secondary" href="{% url 'edit_event' event.id %}"
+                               aria-label="Edit event: {{ event.title }}">Edit</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% empty %}
+                <div class="empty-state">
+                    <p>No events yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <aside class="calendar-sidebar">
+            <section class="month-card" aria-labelledby="month-title">
+                <h2 id="month-title">{{ today|date:'F Y' }}</h2>
+                <div class="month-grid">
+                    <span class="weekday">Sun</span>
+                    <span class="weekday">Mon</span>
+                    <span class="weekday">Tue</span>
+                    <span class="weekday">Wed</span>
+                    <span class="weekday">Thu</span>
+                    <span class="weekday">Fri</span>
+                    <span class="weekday">Sat</span>
+                    {% for week in weeks %}
+                        {% for day in week %}
+                            {% if day == 0 %}
+                            <span class="day" aria-hidden="true"></span>
+                            {% elif day == today.day %}
+                            <span class="day today" aria-current="date">{{ day }}</span>
+                            {% else %}
+                            <span class="day">{{ day }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
             </section>
-
-            <div class="planner-layout">
-                <section class="agenda" aria-labelledby="agenda-title">
-                    <h2 id="agenda-title">Events</h2>
-                    <div class="calendar-actions">
-                        <a href="{% url 'add_event' %}">Add event</a>
-                        <a href="{% url 'share_calendar' %}">Share calendar</a>
-                    </div>
-                    {% if incoming_calendar_shares %}
-                    <p class="shared-calendars">Shared with you:
-                        {% for share in incoming_calendar_shares %}
-                            {{ share.owner.username }}{% if not forloop.last %}, {% endif %}
-                        {% endfor %}
-                    </p>
-                    {% endif %}
-
-                    <div class="event-list">
-                        {% for event in events %}
-                        <article class="event-row">
-                            <div class="date-tile">
-                                <span>{{ event.date|date:'M' }}</span>
-                                <strong>{{ event.date|date:'j' }}</strong>
-                            </div>
-                            <div class="event-summary">
-                                <h3>{{ event.title }}</h3>
-                                <p class="event-date">{{ event.date|date:'l, F j' }}</p>
-                                {% if event.user != user %}
-                                <p class="event-date">From {{ event.user.username }}'s calendar</p>
-                                {% endif %}
-                                {% if event.description %}
-                                <p class="event-notes">{{ event.description }}</p>
-                                {% endif %}
-                                <div class="event-actions">
-                                    {% if event.user == user %}
-                                    <a href="{% url 'share_event' event.id %}">Share event</a>
-                                    {% endif %}
-                                    {% if event.id in editable_event_ids %}
-                                    <a href="{% url 'edit_event' event.id %}">Edit</a>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </article>
-                        {% empty %}
-                        <div class="empty-state">
-                            <p>No events yet.</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </section>
-
-                <aside class="calendar-sidebar">
-                    <section class="month-card" aria-labelledby="month-title">
-                        <h2 id="month-title">{{ today|date:'F Y' }}</h2>
-                        <div class="month-grid">
-                            <span class="weekday">Sun</span>
-                            <span class="weekday">Mon</span>
-                            <span class="weekday">Tue</span>
-                            <span class="weekday">Wed</span>
-                            <span class="weekday">Thu</span>
-                            <span class="weekday">Fri</span>
-                            <span class="weekday">Sat</span>
-                            {% for week in weeks %}
-                                {% for day in week %}
-                                    {% if day == 0 %}
-                                    <span class="day" aria-hidden="true"></span>
-                                    {% elif day == today.day %}
-                                    <span class="day today" aria-current="date">{{ day }}</span>
-                                    {% else %}
-                                    <span class="day">{{ day }}</span>
-                                    {% endif %}
-                                {% endfor %}
-                            {% endfor %}
-                        </div>
-                    </section>
-                </aside>
-            </div>
-        </main>
+        </aside>
     </div>
-</body>
-</html>
+</main>
+{% endblock %}
