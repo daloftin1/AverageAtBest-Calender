@@ -1,18 +1,25 @@
-<!DOCTYPE html>
-<html><head><title>Share Event</title></head><body>
-<h1>Share “{{ event.title }}”</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Share event</button>
-</form>
-<h2>Shared with</h2>
-<ul>
-{% for user in shared_users %}
-    <li>{{ user.username }} <a href="{% url 'unshare_event' event.id user.id %}">Remove</a></li>
-{% empty %}
-    <li>This event is not shared with anyone.</li>
-{% endfor %}
-</ul>
-<p><a href="{% url 'calendar' %}">Back to calendar</a></p>
-</body></html>
+{% extends "base.html" %}
+
+{% block title %}Share event | Calendar{% endblock %}
+
+{% block content %}
+<main class="auth-page">
+    <section class="auth-card form-card" aria-labelledby="share-title">
+        <h1 id="share-title">Share “{{ event.title }}”</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="login-button" type="submit">Share event</button>
+        </form>
+        <h2>Shared with</h2>
+        <ul class="sharing-list">
+            {% for viewer in shared_users %}
+            <li>{{ viewer.username }} <a href="{% url 'unshare_event' event.id viewer.id %}">Remove</a></li>
+            {% empty %}
+            <li>This event is not shared with anyone.</li>
+            {% endfor %}
+        </ul>
+        <p class="auth-footer"><a href="{% url 'calendar' %}">Back to calendar</a></p>
+    </section>
+</main>
+{% endblock %}

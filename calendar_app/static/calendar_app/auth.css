@@ -1,0 +1,107 @@
+/* Forms use the shared colors so both themes work on every page. */
+.auth-page {
+    padding: 64px 0;
+}
+
+.auth-card {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 32px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+}
+
+.auth-card h1 {
+    margin: 0 0 28px;
+    font-size: 40px;
+    overflow-wrap: anywhere;
+}
+
+.auth-field, .auth-card form > p {
+    margin-bottom: 20px;
+}
+
+.auth-field label, .auth-card form > p label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+}
+
+.auth-field input, .auth-card form > p input,
+.auth-card textarea, .auth-card select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--page);
+    color: var(--ink);
+    font: inherit;
+    font-size: 16px;
+}
+
+.auth-card input:focus-visible,
+.auth-card textarea:focus-visible,
+.auth-card select:focus-visible,
+.login-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.login-button {
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.login-button:hover {
+    background: var(--accent-hover);
+}
+
+.auth-footer {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.auth-footer a {
+    color: var(--accent);
+    text-underline-offset: 3px;
+}
+
+.auth-card .errorlist {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: var(--error);
+    font-size: 13px;
+}
+
+.form-errors {
+    margin-bottom: 22px;
+}
+
+.form-card { max-width: 560px; }
+.auth-card textarea { resize: vertical; min-height: 110px; }
+.auth-card .helptext {
+    display: block;
+    margin-top: 7px;
+    color: var(--muted);
+    font-size: 12px;
+}
+.auth-card h2 { margin: 28px 0 14px; font-size: 20px; font-weight: 500; }
+.sharing-list { padding-left: 20px; overflow-wrap: anywhere; }
+.sharing-list li { margin-bottom: 12px; }
+.sharing-list a { color: var(--accent); margin-left: 8px; }
+
+@media (max-width: 480px) {
+    .auth-page { padding: 36px 0; }
+    .auth-card { padding: 24px; }
+    .auth-card h1 { font-size: 34px; }
+}

@@ -1,0 +1,399 @@
+/* Main colors and page setup. */
+:root {
+    color-scheme: light;
+    --page: #f8faf9;
+    --surface: #ffffff;
+    --ink: #243b34;
+    --muted: #6e7e76;
+    --line: #e3eae5;
+    --accent: #346956;
+    --accent-hover: #243b34;
+    --accent-text: #ffffff;
+    --soft-accent: #edf3ef;
+    --calendar-line: #d1d5d3;
+    --error: #a13232;
+    --switch-track: #d8e3dc;
+    --switch-knob: #ffffff;
+}
+
+/* Dark mode uses black surfaces and red accents. */
+:root[data-theme='dark'] {
+    color-scheme: dark;
+    --page: #0c0c0f;
+    --surface: #17171c;
+    --ink: #f4edef;
+    --muted: #b9adb3;
+    --line: #383039;
+    --accent: #f15b68;
+    --accent-hover: #ff7b86;
+    --accent-text: #1b080b;
+    --soft-accent: #331c24;
+    --calendar-line: #4a3d45;
+    --error: #ff8c98;
+    --switch-track: #66313b;
+    --switch-knob: #f4edef;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: 'Segoe UI', Arial, sans-serif;
+    line-height: 1.5;
+}
+h1, h2, h3, p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 3px; }
+.app-shell {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px;
+}
+
+/* Header and page introduction. */
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+    padding: 20px 0;
+    min-height: 95px;
+    border-bottom: 1px solid var(--line);
+}
+.header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    margin-left: auto;
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* The switch can be clicked, tapped, or used with the keyboard. */
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.theme-toggle:hover {
+    border-color: var(--accent);
+    background: var(--soft-accent);
+}
+.theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+.theme-toggle:disabled { cursor: default; opacity: .6; }
+.theme-track {
+    display: flex;
+    align-items: center;
+    width: 32px;
+    height: 20px;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--switch-track);
+}
+.theme-knob {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--switch-knob);
+}
+.theme-toggle[aria-checked='true'] .theme-track { background: var(--accent); }
+.theme-toggle[aria-checked='true'] .theme-knob { transform: translateX(12px); }
+.brand {
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -1px;
+}
+.account-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    min-width: 0;
+    font-size: 13px;
+}
+.event-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    color: var(--accent);
+    font-size: 13px;
+}
+.shared-calendars { margin-bottom: 16px; color: var(--muted); font-size: 13px; }
+.page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px 24px;
+    padding: 60px 0 50px;
+}
+
+/* Main calendar buttons use the active theme colors. */
+.calendar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 11px 18px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+}
+.button-primary {
+    background: var(--accent);
+    color: var(--accent-text);
+}
+.button-primary:hover { background: var(--accent-hover); }
+.button-secondary {
+    background: var(--surface);
+    border-color: var(--calendar-line);
+    color: var(--ink);
+}
+.button-secondary:hover {
+    border-color: var(--accent);
+    background: var(--soft-accent);
+}
+.button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* Smaller buttons for each event and the account menu. */
+.button-compact {
+    padding: 8px 12px;
+    font-size: 12px;
+    transition: background-color 140ms, color 140ms, border-color 140ms, transform 140ms;
+}
+.button-compact:hover { transform: translateY(-1px); }
+.button-compact:active { transform: translateY(0); }
+.button-soft {
+    background: var(--soft-accent);
+    color: var(--accent);
+}
+.button-soft:hover {
+    background: var(--accent);
+    color: var(--accent-text);
+}
+
+/* The username opens a small panel with the signed-in account details. */
+.profile-menu { min-width: 0; }
+.profile-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    max-width: 190px;
+    padding: 7px 10px;
+    border: 1px solid var(--calendar-line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    list-style: none;
+    cursor: pointer;
+    transition: background-color 140ms, border-color 140ms;
+}
+.profile-button::-webkit-details-marker { display: none; }
+.profile-button:hover, .profile-menu[open] .profile-button {
+    background: var(--soft-accent);
+    border-color: var(--accent);
+}
+.profile-button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+.profile-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--soft-accent);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+}
+.profile-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.profile-chevron {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-right: 1px solid var(--muted);
+    border-bottom: 1px solid var(--muted);
+    transform: rotate(45deg);
+}
+.profile-menu[open] .profile-chevron { transform: rotate(225deg); }
+.profile-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 10;
+    width: 240px;
+    max-width: calc(100vw - 44px);
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 10px 26px #00000018;
+}
+.profile-label, .profile-id { color: var(--muted); font-size: 12px; }
+.profile-username { display: block; margin: 6px 0 12px; font-weight: 500; overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+    .button-compact, .profile-button { transition: none; }
+    .button-compact:hover, .button-compact:active { transform: none; }
+}
+h1 {
+    margin: 14px 0;
+    font-family: Georgia, serif;
+    font-size: 48px;
+    font-weight: 400;
+    letter-spacing: -1.5px;
+    line-height: 1.2;
+}
+
+/* Event list on the left. */
+.planner-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 40px;
+    align-items: start;
+}
+.agenda h2 {
+    margin: 5px 0 25px;
+    font-size: 24px;
+    font-weight: 500;
+}
+.event-list { border-top: 1px solid var(--line); }
+.event-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--line);
+}
+.date-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 60px;
+    min-height: 68px;
+    background: var(--soft-accent);
+    border-radius: 10px;
+}
+.date-tile span {
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.date-tile strong { font-size: 25px; font-weight: 500; }
+.event-summary {
+    min-width: 0;
+    padding-top: 3px;
+    overflow-wrap: anywhere;
+}
+.event-summary h3 { font-size: 16px; font-weight: 500; }
+.event-date, .event-notes {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 12px;
+}
+.event-notes { margin-top: 12px; white-space: pre-line; }
+.empty-state { padding: 35px 0; }
+.empty-state p { margin-top: 8px; color: var(--muted); font-size: 13px; }
+
+/* Larger calendar with gray lines between the days. */
+.calendar-sidebar {
+    min-width: 0;
+    width: 100%;
+}
+.month-card {
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+}
+.month-card h2 { margin-bottom: 22px; font-size: 22px; font-weight: 500; }
+.month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border-top: 1px solid var(--calendar-line);
+    border-left: 1px solid var(--calendar-line);
+    text-align: center;
+}
+.month-grid > span {
+    border-right: 1px solid var(--calendar-line);
+    border-bottom: 1px solid var(--calendar-line);
+}
+.weekday {
+    padding: 10px 0;
+    background: var(--page);
+    color: var(--muted);
+    font-size: 12px;
+}
+.day {
+    display: flex;
+    align-items: flex-start;
+    min-height: 80px;
+    padding: 10px;
+    font-size: 16px;
+}
+.today {
+    background: var(--soft-accent);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+@media (max-width: 950px) {
+    .planner-layout { grid-template-columns: 1fr; gap: 36px; }
+}
+
+/* Stack the layout on smaller screens. */
+@media (max-width: 750px) {
+    .app-shell { padding: 0 22px; }
+    .page-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 36px 0;
+    }
+    h1 { font-size: 36px; letter-spacing: -1px; }
+    .month-card { padding: 16px; }
+    .day { min-height: 60px; padding: 7px; font-size: 14px; }
+    .weekday { font-size: 11px; }
+}

@@ -1,3 +1,6 @@
+import calendar
+from datetime import date
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
@@ -18,7 +21,10 @@ def register_view(request):
     return render(request, 'registration/register.html', {'form': form})
 
 @login_required(login_url='/accounts/login/')
+# Show your events and shared events beside the current month.
 def calendar_view(request):
+    today = date.today()
+    weeks = calendar.Calendar(firstweekday=6).monthdayscalendar(today.year, today.month)
     events = []
     added_event_ids = set()
 
@@ -55,6 +61,8 @@ def calendar_view(request):
         'events': events,
         'editable_event_ids': editable_event_ids,
         'incoming_calendar_shares': calendar_shares,
+        'today': today,
+        'weeks': weeks,
     })
 
 @login_required(login_url='/accounts/login/')

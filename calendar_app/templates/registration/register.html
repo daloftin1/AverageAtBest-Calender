@@ -1,7 +1,17 @@
-<h2>Register a New Account</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Sign Up</button>
-</form>
-<p>Already have an account? <a href="{% url 'login' %}">Log in here</a></p>
+{% extends "base.html" %}
+
+{% block title %}Create account | Calendar{% endblock %}
+
+{% block content %}
+<main class="auth-page">
+    <section class="auth-card" aria-labelledby="register-title">
+        <h1 id="register-title">Create account</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="login-button" type="submit">Sign up</button>
+        </form>
+        <p class="auth-footer">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+    </section>
+</main>
+{% endblock %}

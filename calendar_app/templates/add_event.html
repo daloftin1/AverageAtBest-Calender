@@ -1,21 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Event</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f4f6f8; color: #333; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Add a New Event</h2>
+{% extends "base.html" %}
+
+{% block title %}{% if editing %}Edit event{% else %}Add event{% endif %} | Calendar{% endblock %}
+
+{% block content %}
+<main class="auth-page">
+    <section class="auth-card form-card" aria-labelledby="event-title">
+        <h1 id="event-title">{% if editing %}Edit event{% else %}Add event{% endif %}</h1>
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit">Save Event</button>
+            <button class="login-button" type="submit">Save event</button>
         </form>
-        <p><a href="{% url 'calendar' %}">Back to Calendar</a></p>
-    </div>
-</body>
-</html>
+        <p class="auth-footer"><a href="{% url 'calendar' %}">Back to calendar</a></p>
+    </section>
+</main>
+{% endblock %}
