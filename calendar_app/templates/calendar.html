@@ -1,85 +1,93 @@
 {% extends "base.html" %}
-
+{% load static %}
+{% block extra_head %}<script src="{% static 'calendar_app/agenda.js' %}" defer></script>{% endblock %}
 {% block content %}
 <main>
     <section class="page-heading">
         <h1>{{ today|date:'F j, Y' }}</h1>
-        <div class="calendar-actions">
-            <a class="button button-primary" href="{% url 'add_event' %}">Add event</a>
-            <a class="button button-secondary" href="{% url 'share_calendar' %}">Share calendar</a>
-        </div>
+
     </section>
-
     <div class="planner-layout">
-        <section class="agenda" aria-labelledby="agenda-title">
-            <h2 id="agenda-title">Events</h2>
-            {% if incoming_calendar_shares %}
-            <p class="shared-calendars">Shared with you:
-                {% for share in incoming_calendar_shares %}
-                    {{ share.owner.username }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            </p>
+        <section class="agenda" aria-labelledby="agenda-title" id="day-events">
+            <div class="agenda-heading"><h2 id="agenda-title">{{ profile_label }} events</h2><span class="event-total">{{ events|length }}</span></div>
+            <div class="agenda-scroll" tabindex="0" role="region" aria-label="Scrollable events">
+            {% if incoming_calendar_shares %}<p class="shared-calendars">Shared with you: {% for share in incoming_calendar_shares %}{{ share.owner.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+            {% if selected_date %}
+            <div class="selected-day-heading">
+                <h3>{{ selected_date|date:'l, F j, Y' }}</h3>
+                <a href="?profile={{ active_profile }}" class="clear-day">Show today &amp; upcoming</a>
+            </div>
+            {% include 'event_list.html' with event_group=events empty_message='No events on this day in this profile.' %}
+            {% else %}
+            <h3 class="section-label">Today</h3>
+            {% include 'event_list.html' with event_group=today_events empty_message='Nothing scheduled today.' %}
+            <h3 class="section-label">Upcoming</h3>
+            {% include 'event_list.html' with event_group=upcoming_events empty_message='No upcoming events in this profile.' %}
             {% endif %}
-
-            <div class="event-list">
-                {% for event in events %}
-                <article class="event-row">
-                    <div class="date-tile">
-                        <span>{{ event.date|date:'M' }}</span>
-                        <strong>{{ event.date|date:'j' }}</strong>
-                    </div>
-                    <div class="event-summary">
-                        <h3>{{ event.title }}</h3>
-                        <p class="event-date">{{ event.date|date:'l, F j' }}</p>
-                        {% if event.user != user %}
-                        <p class="event-date">From {{ event.user.username }}'s calendar</p>
-                        {% endif %}
-                        {% if event.description %}
-                        <p class="event-notes">{{ event.description }}</p>
-                        {% endif %}
-                        <div class="event-actions">
-                            {% if event.user == user %}
-                            <a class="button button-compact button-soft" href="{% url 'share_event' event.id %}"
-                               aria-label="Share event: {{ event.title }}">Share event</a>
-                            {% endif %}
-                            {% if event.id in editable_event_ids %}
-                            <a class="button button-compact button-secondary" href="{% url 'edit_event' event.id %}"
-                               aria-label="Edit event: {{ event.title }}">Edit</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </article>
-                {% empty %}
-                <div class="empty-state">
-                    <p>No events yet.</p>
-                </div>
-                {% endfor %}
             </div>
         </section>
-
         <aside class="calendar-sidebar">
+            <nav class="profile-tabs" aria-label="Calendar profiles">
+                {% for value, label in profiles %}
+                <a class="profile-tab" data-profile="{{ value }}" href="?profile={{ value }}&amp;month={{ displayed_month|date:'Y-m' }}{% if selected_date %}&amp;date={{ selected_date|date:'Y-m-d' }}{% endif %}" {% if active_profile == value %}aria-current="page"{% endif %}>
+                    <i class="profile-dot" aria-hidden="true"></i>{{ label }}
+                </a>
+                {% endfor %}
+            </nav>
             <section class="month-card" aria-labelledby="month-title">
-                <h2 id="month-title">{{ today|date:'F Y' }}</h2>
-                <div class="month-grid">
-                    <span class="weekday">Sun</span>
-                    <span class="weekday">Mon</span>
-                    <span class="weekday">Tue</span>
-                    <span class="weekday">Wed</span>
-                    <span class="weekday">Thu</span>
-                    <span class="weekday">Fri</span>
-                    <span class="weekday">Sat</span>
-                    {% for week in weeks %}
-                        {% for day in week %}
-                            {% if day == 0 %}
-                            <span class="day" aria-hidden="true"></span>
-                            {% elif day == today.day %}
-                            <span class="day today" aria-current="date">{{ day }}</span>
-                            {% else %}
-                            <span class="day">{{ day }}</span>
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
+                <div class="calendar-toolbar">
+                <nav class="month-navigation" aria-label="Month navigation">
+                    <h2 id="month-title">{{ displayed_month|date:'F Y' }}</h2>
+                    <div class="month-arrows">
+                        {% if previous_month %}<a class="month-nav-button" href="?profile={{ active_profile }}&amp;month={{ previous_month|date:'Y-m' }}" aria-label="Previous month: {{ previous_month|date:'F Y' }}"><span aria-hidden="true">&lt;</span></a>{% endif %}
+                        {% if next_month %}<a class="month-nav-button" href="?profile={{ active_profile }}&amp;month={{ next_month|date:'Y-m' }}" aria-label="Next month: {{ next_month|date:'F Y' }}"><span aria-hidden="true">&gt;</span></a>{% endif %}
+                    </div>
+                </nav>
+        <div class="calendar-actions">
+            <a class="button button-compact button-primary" href="{% url 'add_event' %}?profile={{ active_profile }}">Add event</a>
+            <a class="button button-compact button-secondary" href="{% url 'share_calendar' %}">Share calendar</a>
+        </div>
                 </div>
+                <div class="month-grid">
+                    <span class="weekday">Sun</span><span class="weekday">Mon</span><span class="weekday">Tue</span><span class="weekday">Wed</span><span class="weekday">Thu</span><span class="weekday">Fri</span><span class="weekday">Sat</span>
+                    {% for week in weeks %}{% for day in week %}
+                    {% if not day.number %}<span class="day" aria-hidden="true"></span>
+                    {% else %}
+                    <a class="day day-link{% if day.count >= 3 %} canon-day{% endif %}{% if day.is_today %} today{% endif %}{% if day.selected %} selected-day{% endif %}" data-profile="{{ active_profile }}"
+                       href="?profile={% if day.count >= 3 %}all{% else %}{{ active_profile }}{% endif %}&amp;date={{ day.date|date:'Y-m-d' }}#day-events"
+                       aria-label="{{ day.date|date:'F j, Y' }}: {{ day.count }} event{{ day.count|pluralize }}{% if day.selected %}, selected{% endif %}"
+                       {% if day.is_today %}aria-current="date"{% endif %}>
+
+                        {% if day.count >= 3 %}
+                        <span class="day-indicators" title="{{ day.summary }}">
+                            {% include 'astral_marker.html' with marker_profiles=day.profiles marker_date=day.number %}
+                            <span class="day-tooltip">{{ day.count }} events · {{ day.summary }}</span>
+                        </span>
+                        {% else %}
+                        <span>{{ day.number }}</span>
+                        {% if day.count %}
+                        <span class="day-indicators" title="{{ day.summary }}">
+                            {% for event in day.markers %}<i class="profile-dot" data-profile="{{ event.profile }}" aria-hidden="true"></i>{% endfor %}
+                            <span class="day-tooltip">{{ day.summary }}</span>
+                        </span>
+                        {% endif %}
+                        {% endif %}
+                    </a>
+                    {% endif %}
+                    {% endfor %}{% endfor %}
+                </div>
+                <div class="calendar-legend" aria-label="Event colors">
+                    {% for value, label in profiles %}{% if value != 'all' %}<span data-profile="{{ value }}"><i class="profile-dot" aria-hidden="true"></i>{{ label }}</span>{% endif %}{% endfor %}
+                </div>
+                {% if upcoming_canon %}
+                <a class="upcoming-canon" href="?profile=all&amp;date={{ upcoming_canon.date|date:'Y-m-d' }}#day-events">
+                    {% include 'astral_marker.html' with marker_profiles=upcoming_canon.profiles marker_date=upcoming_canon.date.day %}
+                    <span class="canon-details"><span class="canon-eyebrow">Upcoming canon event</span><strong>{{ upcoming_canon.date|date:'l, F j, Y' }}</strong><span class="canon-meta">{% if upcoming_canon.date == today %}Today · {% endif %}{{ upcoming_canon.count }} events · All profiles</span></span>
+                    <span class="canon-open" aria-hidden="true">&#8599;</span>
+                </a>
+                {% else %}
+                <div class="upcoming-canon canon-empty"><span class="canon-details"><span class="canon-eyebrow">Upcoming canon event</span><span class="canon-meta">No days with 3+ events ahead.</span></span></div>
+                {% endif %}
             </section>
         </aside>
     </div>

@@ -6,12 +6,15 @@
 <main class="auth-page">
     <section class="auth-card form-card" aria-labelledby="event-title">
         <h1 id="event-title">{% if editing %}Edit event{% else %}Add event{% endif %}</h1>
+        {% if not editing %}
+        <p class="profile-form-note">{% if active_profile == 'all' %}Choose the profile this event belongs to.{% else %}Adding to <strong class="profile-color" data-profile="{{ active_profile }}">{{ profile_label }}</strong>.{% endif %}</p>
+        {% endif %}
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
             <button class="login-button" type="submit">Save event</button>
         </form>
-        <p class="auth-footer"><a href="{% url 'calendar' %}">Back to calendar</a></p>
+        <p class="auth-footer"><a href="{% url 'calendar' %}?profile={{ active_profile }}">Back to calendar</a></p>
     </section>
 </main>
 {% endblock %}
