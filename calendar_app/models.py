@@ -7,6 +7,7 @@ class Event(models.Model):
     shared_with = models.ManyToManyField(User, blank=True, related_name='shared_events')
     title = models.CharField(max_length=100)
     date = models.DateField()
+    time = models.TimeField(null=True, blank=True)
     description = models.TextField(blank=True)
 
     def __str__(self):

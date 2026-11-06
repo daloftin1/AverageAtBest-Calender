@@ -7,9 +7,13 @@ from .models import CalendarShare, Event
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event
-        fields = ['title', 'date', 'description']
+        fields = ['title', 'date', 'time', 'description']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
+            'time': forms.TimeInput(
+                format='%H:%M',
+                attrs={'type': 'time'}
+            ),
         }
 
 
