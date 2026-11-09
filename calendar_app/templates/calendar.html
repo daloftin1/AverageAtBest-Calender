@@ -24,6 +24,52 @@
             <h3 class="section-label">Upcoming</h3>
             {% include 'event_list.html' with event_group=upcoming_events empty_message='No upcoming events in this profile.' %}
             {% endif %}
+
+            <button type="button" id="enableNotifications">
+                Enable Sound Notifications
+            </button>
+
+            <div class="event-list">
+                {% for event in events %}
+                <article class="event-row"
+                         data-event-id="{{ event.id }}"
+                         data-event-date="{{ event.date|date:'Y-m-d' }}"
+                         data-event-time="{% if event.time %}{{ event.time|time:'H:i:s' }}{% endif %}">
+                    <div class="date-tile">
+                        <span>{{ event.date|date:'M' }}</span>
+                        <strong>{{ event.date|date:'j' }}</strong>
+                    </div>
+                    <div class="event-summary">
+                        <h3>{{ event.title }}</h3>
+                        <p class="event-date">{{ event.date|date:'l, F j' }}
+                            {{ event.date|date:'l, F j'}}
+                            {% if event.time %}
+                                at {{ event.time|time:'g:i A'}}
+                            {% endif %}
+                        </p>
+                        {% if event.user != user %}
+                        <p class="event-date">From {{ event.user.username }}'s calendar</p>
+                        {% endif %}
+                        {% if event.description %}
+                        <p class="event-notes">{{ event.description }}</p>
+                        {% endif %}
+                        <div class="event-actions">
+                            {% if event.user == user %}
+                            <a class="button button-compact button-soft" href="{% url 'share_event' event.id %}"
+                               aria-label="Share event: {{ event.title }}">Share event</a>
+                            {% endif %}
+                            {% if event.id in editable_event_ids %}
+                            <a class="button button-compact button-secondary" href="{% url 'edit_event' event.id %}"
+                               aria-label="Edit event: {{ event.title }}">Edit</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </article>
+                {% empty %}
+                <div class="empty-state">
+                    <p>No events yet.</p>
+                </div>
+                {% endfor %}
             </div>
         </section>
         <aside class="calendar-sidebar">
@@ -91,5 +137,73 @@
             </section>
         </aside>
     </div>
+
+    <audio
+        id="eventNotification"
+        src="{% static 'calendar_app/sounds/notification.wav' %}"
+        preload="auto">
+    </audio>
+
+    <script>
+        const notifiedEvents = new Set();
+
+        function playEventNotification() {
+            const audio = document.getElementById("eventNotification");
+
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(console.error);
+            }
+        }
+
+        function checkUpcomingEvents() {
+            const now = new Date();
+            const events = document.querySelectorAll(".event-row");
+
+            events.forEach(event => {
+                const eventId = event.dataset.eventId;
+                const eventDate = event.dataset.eventDate;
+                const eventTime = event.dataset.eventTime;
+
+                if (!eventId || !eventDate || !eventTime) return;
+
+                const startTime = new Date(`${eventDate}T${eventTime}`);
+                const minutesUntil = (startTime - now) / 60000;
+
+                if (
+                    minutesUntil >= 0 &&
+                    minutesUntil <= 60 &&
+                    !notifiedEvents.has(eventId)
+                ) {
+                    playEventNotification();
+                    notifiedEvents.add(eventId);
+                }
+            });
+        }
+
+        // Checks every time the page is loaded which means it will play every time the user reloads, might want to change this
+        checkUpcomingEvents();
+
+        // Check for events every 30 seconds, might want to make it check every time the user's clock increases by a minute
+        setInterval(checkUpcomingEvents, 30000);
+
+        document.getElementById("enableNotifications")
+            .addEventListener("click", async () => {
+                const audio = document.getElementById("eventNotification");
+
+                try {
+                    await audio.play();
+                    audio.pause();
+                    audio.currentTime = 0;
+
+                    document.getElementById("enableNotifications").textContent =
+                        "Sound Notifications Enabled";
+
+                    checkUpcomingEvents();
+                } catch(error) {
+                    console.error("Could not enable sound:", error);
+                }
+            });
+    </script>
 </main>
 {% endblock %}
