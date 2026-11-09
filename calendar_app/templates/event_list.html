@@ -1,0 +1,18 @@
+<div class="event-list">
+    {% for event in event_group %}
+    <article class="event-row" data-profile="{{ event.profile }}">
+        <div class="date-tile"><span>{{ event.date|date:'M' }}</span><strong>{{ event.date|date:'j' }}</strong></div>
+        <div class="event-summary">
+            <span class="event-profile"><i class="profile-dot" aria-hidden="true"></i>{{ event.get_profile_display }}</span>
+            <h3>{{ event.title }}</h3>
+            <p class="event-date">{{ event.date|date:'l, F j' }}</p>
+            {% if event.user != user %}<p class="event-date">From {{ event.user.username }}'s calendar</p>{% endif %}
+            {% if event.description %}<details class="event-description"><summary>Details</summary><p class="event-notes">{{ event.description }}</p></details>{% endif %}
+            <div class="event-actions">
+                {% if event.user == user %}<a class="button button-compact button-soft" href="{% url 'share_event' event.id %}" aria-label="Share event: {{ event.title }}">Share event</a>{% endif %}
+                {% if event.id in editable_event_ids %}<a class="button button-compact button-secondary" href="{% url 'edit_event' event.id %}?profile={{ active_profile }}" aria-label="Edit event: {{ event.title }}">Edit</a>{% endif %}
+            </div>
+        </div>
+    </article>
+    {% empty %}<p class="section-empty">{{ empty_message }}</p>{% endfor %}
+</div>

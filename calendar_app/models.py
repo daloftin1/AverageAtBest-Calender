@@ -3,6 +3,12 @@ from django.contrib.auth.models import User
 
 
 class Event(models.Model):
+    class Profile(models.TextChoices):
+        WORK = 'work', 'Work'
+        SCHOOL = 'school', 'School'
+        PERSONAL = 'personal', 'Personal'
+
+    profile = models.CharField(max_length=8, choices=Profile.choices, default=Profile.PERSONAL)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     shared_with = models.ManyToManyField(User, blank=True, related_name='shared_events')
     title = models.CharField(max_length=100)

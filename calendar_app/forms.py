@@ -5,9 +5,18 @@ from .models import CalendarShare, Event
 
 
 class EventForm(forms.ModelForm):
+    profile = forms.ChoiceField(choices=[('', 'Choose a profile')] + Event.Profile.choices)
+
+    def __init__(self, *args, fixed_profile=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if fixed_profile:
+            self.fields['profile'].initial = fixed_profile
+            self.fields['profile'].disabled = True
+            self.fields['profile'].widget = forms.HiddenInput()
+
     class Meta:
         model = Event
-        fields = ['title', 'date', 'time', 'description']
+        fields = ['title', 'profile', 'date', 'time', 'description']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
             'time': forms.TimeInput(
