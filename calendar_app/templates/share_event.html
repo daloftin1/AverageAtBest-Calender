@@ -14,7 +14,11 @@
         <h2>Shared with</h2>
         <ul class="sharing-list">
             {% for viewer in shared_users %}
-            <li>{{ viewer.username }} <a href="{% url 'unshare_event' event.id viewer.id %}">Remove</a></li>
+            <li>
+                {{ viewer.username }}
+                {% if viewer.email %}({{ viewer.email }}){% endif %}
+                <a href="{% url 'unshare_event' event.id viewer.id %}">Remove</a>
+            </li>
             {% empty %}
             <li>This event is not shared with anyone.</li>
             {% endfor %}

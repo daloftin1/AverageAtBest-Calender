@@ -1,7 +1,9 @@
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
+from django.core import mail
 from django.test import TestCase
+from django.test import override_settings
 from django.urls import reverse
 
 from .models import CalendarShare, Event
@@ -15,12 +17,14 @@ class CalendarAuthenticationTests(TestCase):
     def test_registration_creates_user_and_event_belongs_to_user(self):
         response = self.client.post(reverse('register'), {
             'username': 'calendar-user',
+            'email': 'calendar-user@example.com',
             'password1': 'strong-calendar-pass-123',
             'password2': 'strong-calendar-pass-123',
         })
         self.assertRedirects(response, reverse('calendar'))
 
         user = User.objects.get(username='calendar-user')
+        self.assertEqual(user.email, 'calendar-user@example.com')
         response = self.client.post(reverse('add_event'), {
             'title': 'My event',
             'date': '2026-11-01',
@@ -50,6 +54,49 @@ class CalendarAuthenticationTests(TestCase):
         self.client.force_login(viewer)
         response = self.client.get(reverse('calendar'))
         self.assertContains(response, 'Shared event')
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_calendar_can_be_shared_by_email_and_sends_notification(self):
+        owner = User.objects.create_user(
+            'owner', password='pass', email='owner@example.com'
+        )
+        viewer = User.objects.create_user(
+            'viewer', password='pass', email='Viewer@example.com'
+        )
+        self.client.force_login(owner)
+
+        response = self.client.post(reverse('share_calendar'), {
+            'username': 'viewer@example.com',
+            'permission': CalendarShare.READ,
+        })
+
+        self.assertRedirects(response, reverse('share_calendar'))
+        self.assertTrue(CalendarShare.objects.filter(owner=owner, viewer=viewer).exists())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['Viewer@example.com'])
+        self.assertIn(reverse('calendar'), mail.outbox[0].body)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_event_can_be_shared_by_email_and_sends_notification(self):
+        owner = User.objects.create_user(
+            'owner', password='pass', email='owner@example.com'
+        )
+        viewer = User.objects.create_user(
+            'viewer', password='pass', email='viewer@example.com'
+        )
+        event = Event.objects.create(
+            user=owner, title='Shared event', date='2026-11-01'
+        )
+        self.client.force_login(owner)
+
+        response = self.client.post(reverse('share_event', args=[event.id]), {
+            'username': 'viewer@example.com',
+        })
+
+        self.assertRedirects(response, reverse('share_event', args=[event.id]))
+        self.assertTrue(event.shared_with.filter(id=viewer.id).exists())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Shared event', mail.outbox[0].body)
 
     def test_calendar_edit_permission_is_enforced(self):
         owner = User.objects.create_user('owner', password='pass')

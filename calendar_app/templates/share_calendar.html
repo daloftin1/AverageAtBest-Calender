@@ -14,7 +14,12 @@
         <h2>People with access</h2>
         <ul class="sharing-list">
             {% for share in shares %}
-            <li>{{ share.viewer.username }} — {{ share.get_permission_display }} <a href="{% url 'unshare_calendar' share.id %}">Remove</a></li>
+            <li>
+                {{ share.viewer.username }}
+                {% if share.viewer.email %}({{ share.viewer.email }}){% endif %}
+                — {{ share.get_permission_display }}
+                <a href="{% url 'unshare_calendar' share.id %}">Remove</a>
+            </li>
             {% empty %}
             <li>Your calendar is not shared with anyone.</li>
             {% endfor %}

@@ -4,25 +4,53 @@ from collections import defaultdict
 from urllib.parse import urlencode
 
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from django.db.models import Count, Q
+from django.core.mail import send_mail
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import CalendarShareForm, EventForm, EventShareForm
+from .forms import AccountCreationForm, CalendarShareForm, EventForm, EventShareForm
 from .models import CalendarShare, Event
 
 def register_view(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = AccountCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user) # Automatically log them in after sign-up
             return redirect('calendar')
     else:
-        form = UserCreationForm()
+        form = AccountCreationForm()
     return render(request, 'registration/register.html', {'form': form})
+
+
+def send_calendar_share_email(request, viewer, owner, is_event=False, event=None):
+    if not viewer.email:
+        return
+
+    if is_event:
+        calendar_url = request.build_absolute_uri(reverse('calendar'))
+        subject = f'{owner.username} shared an event with you'
+        message = (
+            f'{owner.username} shared "{event.title}" with you in the calendar app.\n\n'
+            f'Open the app: {calendar_url}'
+        )
+    else:
+        calendar_url = request.build_absolute_uri(reverse('calendar'))
+        subject = f'{owner.username} shared their calendar with you'
+        message = (
+            f'{owner.username} shared their calendar with you.\n\n'
+            f'Open the shared calendar: {calendar_url}'
+        )
+
+    send_mail(
+        subject,
+        message,
+        None,
+        [viewer.email],
+        fail_silently=False,
+    )
 
 def selected_profile(request):
     profile = request.GET.get('profile', 'all')
@@ -151,6 +179,9 @@ def share_event_view(request, event_id):
                 form.add_error('username', 'You cannot share an event with yourself.')
             else:
                 event.shared_with.add(viewer)
+                send_calendar_share_email(
+                    request, viewer, request.user, is_event=True, event=event
+                )
                 return redirect('share_event', event_id=event.id)
     else:
         form = EventShareForm()
@@ -189,6 +220,7 @@ def share_calendar_view(request):
                         viewer=viewer,
                         permission=form.cleaned_data['permission'],
                     )
+                send_calendar_share_email(request, viewer, request.user)
                 return redirect('share_calendar')
     else:
         form = CalendarShareForm()

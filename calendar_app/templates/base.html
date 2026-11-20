@@ -34,6 +34,7 @@
                         <div class="profile-panel" id="profile-panel">
                             <p class="profile-label">Signed in as</p>
                             <strong class="profile-username">{{ user.username }}</strong>
+                            {% if user.email %}<p class="profile-email">{{ user.email }}</p>{% endif %}
                             <p class="profile-id">Profile ID: {{ user.id }}</p>
                         </div>
                     </details>
