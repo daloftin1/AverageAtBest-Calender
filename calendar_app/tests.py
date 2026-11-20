@@ -34,6 +34,23 @@ class CalendarAuthenticationTests(TestCase):
         self.assertRedirects(response, reverse('calendar') + '?profile=all')
         self.assertEqual(Event.objects.get().user, user)
 
+    def test_registration_rejects_an_email_already_used_case_insensitively(self):
+        User.objects.create_user(
+            'existing-user', password='strong-calendar-pass-123',
+            email='already-used@example.com',
+        )
+
+        response = self.client.post(reverse('register'), {
+            'username': 'new-user',
+            'email': 'ALREADY-USED@example.com',
+            'password1': 'strong-calendar-pass-123',
+            'password2': 'strong-calendar-pass-123',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'An account already uses this email address.')
+        self.assertFalse(User.objects.filter(username='new-user').exists())
+
     def test_users_only_see_their_own_events(self):
         first = User.objects.create_user('first', password='strong-pass-123')
         second = User.objects.create_user('second', password='strong-pass-123')

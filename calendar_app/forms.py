@@ -13,7 +13,10 @@ class AccountCreationForm(UserCreationForm):
         fields = ('username', 'email')
 
     def clean_email(self):
-        return self.cleaned_data['email'].strip()
+        email = self.cleaned_data['email'].strip()
+        if email and User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('An account already uses this email address.')
+        return email
 
 
 class EventForm(forms.ModelForm):
