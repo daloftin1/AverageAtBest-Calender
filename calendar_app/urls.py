@@ -2,7 +2,7 @@ from django.urls import path
 
 from .views import (
     add_event_view, calendar_view, edit_event_view, share_calendar_view,
-    share_event_view, unshare_calendar_view, unshare_event_view,
+    share_event_view, unshare_calendar_view, unshare_event_view, delete_event_view
 )
 
 urlpatterns = [
@@ -13,4 +13,5 @@ urlpatterns = [
     path('events/<int:event_id>/unshare/<int:user_id>/', unshare_event_view, name='unshare_event'),
     path('calendar/share/', share_calendar_view, name='share_calendar'),
     path('calendar/unshare/<int:share_id>/', unshare_calendar_view, name='unshare_calendar'),
+    path('events/<int:event_id>/delete/', delete_event_view, name='delete_event'),
 ]

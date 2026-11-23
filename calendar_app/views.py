@@ -13,6 +13,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from .forms import CalendarShareForm, EventForm, EventShareForm
 from .models import CalendarShare, Event
 
+from django.views.decorators.http import require_POST
+
 def register_view(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -203,3 +205,14 @@ def unshare_calendar_view(request, share_id):
     share = get_object_or_404(CalendarShare, id=share_id, owner=request.user)
     share.delete()
     return redirect('share_calendar')
+
+@login_required(login_url='/accounts/login/')
+@require_POST
+def delete_event_view(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    can_delete = event.user == request.user or CalendarShare.objects.filter(
+        owner=event.user, viewer=request.user, permission=CalendarShare.EDIT
+    ).exists()
+    if can_delete:
+        event.delete()
+    return redirect('calendar')

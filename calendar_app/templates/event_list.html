@@ -11,6 +11,12 @@
             <div class="event-actions">
                 {% if event.user == user %}<a class="button button-compact button-soft" href="{% url 'share_event' event.id %}" aria-label="Share event: {{ event.title }}">Share event</a>{% endif %}
                 {% if event.id in editable_event_ids %}<a class="button button-compact button-secondary" href="{% url 'edit_event' event.id %}?profile={{ active_profile }}" aria-label="Edit event: {{ event.title }}">Edit</a>{% endif %}
+                {% if event.user == user %} 
+                <form method="post" action="{% url 'delete_event' event.id %}" class="inline-form">
+                    {% csrf_token %}
+                    <button type="submit" class="button button-compact button-danger" aria-label="Delete event: {{ event.title }}">Delete</button>
+                </form>
+                {% endif %}
             </div>
         </div>
     </article>
