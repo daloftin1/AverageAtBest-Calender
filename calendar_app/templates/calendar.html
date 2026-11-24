@@ -42,7 +42,6 @@
                     <div class="event-summary">
                         <h3>{{ event.title }}</h3>
                         <p class="event-date">{{ event.date|date:'l, F j' }}
-                            {{ event.date|date:'l, F j'}}
                             {% if event.time %}
                                 at {{ event.time|time:'g:i A'}}
                             {% endif %}
