@@ -313,3 +313,24 @@ class CalendarProfileTests(TestCase):
         cell = next(day for week in response.context['weeks'] for day in week if day['number'] == self.today.day)
         self.assertEqual(cell['count'], 1)
         self.assertIsNone(response.context['upcoming_canon'])
+
+
+class CalendarReminderTests(TestCase):
+    def test_reminder_controls_and_event_metadata_render_for_signed_in_user(self):
+        user = User.objects.create_user('reminder-user')
+        event = Event.objects.create(
+            user=user, title='Timed event', date=date.today(), time='12:34:00',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('calendar'))
+
+        self.assertContains(response, f'id="reminderPreferences" data-user-id="{user.pk}"')
+        self.assertContains(response, '<input type="checkbox" id="enableNotifications">', html=True)
+        for minutes in (5, 15, 30):
+            self.assertContains(
+                response, f'<option value="{minutes}">{minutes} minutes before</option>', html=True,
+            )
+        self.assertContains(response, '<option value="60" selected>60 minutes before</option>', html=True)
+        self.assertContains(response, f'data-event-id="{event.pk}"')
+        self.assertContains(response, 'data-event-time="12:34:00"')

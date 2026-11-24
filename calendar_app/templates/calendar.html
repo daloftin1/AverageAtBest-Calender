@@ -25,9 +25,16 @@
             {% include 'event_list.html' with event_group=upcoming_events empty_message='No upcoming events in this profile.' %}
             {% endif %}
 
-            <button type="button" id="enableNotifications">
-                Enable Sound Notifications
-            </button>
+            <div id="reminderPreferences" data-user-id="{{ user.pk }}">
+                <label><input type="checkbox" id="enableNotifications"> Sound notifications</label>
+                <label for="reminderMinutes">Remind me</label>
+                <select id="reminderMinutes">
+                    <option value="5">5 minutes before</option>
+                    <option value="15">15 minutes before</option>
+                    <option value="30">30 minutes before</option>
+                    <option value="60" selected>60 minutes before</option>
+                </select>
+            </div>
 
             <div class="event-list">
                 {% for event in events %}
@@ -144,65 +151,83 @@
     </audio>
 
     <script>
-        const notifiedEvents = new Set();
-
-        function playEventNotification() {
+        (() => {
+            const preferences = document.getElementById("reminderPreferences");
+            const sound = document.getElementById("enableNotifications");
+            const leadTime = document.getElementById("reminderMinutes");
             const audio = document.getElementById("eventNotification");
+            const storagePrefix = `calendar-reminders:${preferences.dataset.userId}:`;
+            const preferenceKey = storagePrefix + "preferences";
+            const historyKey = storagePrefix + "history";
+            const notified = new Map();
+            let playbackPending = false;
 
-            if (audio) {
-                audio.currentTime = 0;
-                audio.play().catch(console.error);
-            }
-        }
-
-        function checkUpcomingEvents() {
-            const now = new Date();
-            const events = document.querySelectorAll(".event-row");
-
-            events.forEach(event => {
-                const eventId = event.dataset.eventId;
-                const eventDate = event.dataset.eventDate;
-                const eventTime = event.dataset.eventTime;
-
-                if (!eventId || !eventDate || !eventTime) return;
-
-                const startTime = new Date(`${eventDate}T${eventTime}`);
-                const minutesUntil = (startTime - now) / 60000;
-
-                if (
-                    minutesUntil >= 0 &&
-                    minutesUntil <= 60 &&
-                    !notifiedEvents.has(eventId)
-                ) {
-                    playEventNotification();
-                    notifiedEvents.add(eventId);
-                }
-            });
-        }
-
-        // Checks every time the page is loaded which means it will play every time the user reloads, might want to change this
-        checkUpcomingEvents();
-
-        // Check for events every 30 seconds, might want to make it check every time the user's clock increases by a minute
-        setInterval(checkUpcomingEvents, 30000);
-
-        document.getElementById("enableNotifications")
-            .addEventListener("click", async () => {
-                const audio = document.getElementById("eventNotification");
-
+            function readStorage(key) {
                 try {
-                    await audio.play();
-                    audio.pause();
-                    audio.currentTime = 0;
-
-                    document.getElementById("enableNotifications").textContent =
-                        "Sound Notifications Enabled";
-
-                    checkUpcomingEvents();
-                } catch(error) {
-                    console.error("Could not enable sound:", error);
+                    return JSON.parse(localStorage.getItem(key));
+                } catch {
+                    return null;
                 }
+            }
+
+            function writeStorage(key, value) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                } catch {
+                    return;
+                }
+            }
+
+            const saved = readStorage(preferenceKey);
+            sound.checked = saved?.enabled === true;
+            leadTime.value = ["5", "15", "30", "60"].includes(saved?.minutes) ? saved.minutes : "60";
+
+            async function checkUpcomingEvents() {
+                if (!sound.checked || playbackPending) return;
+
+                const now = Date.now();
+                for (const [key, start] of notified) {
+                    if (start < now) notified.delete(key);
+                }
+
+                const history = readStorage(historyKey) || {};
+                const due = new Map();
+                const windowMs = Number(leadTime.value) * 60000;
+                for (const { dataset } of document.querySelectorAll("[data-event-id][data-event-date][data-event-time]")) {
+                    const { eventId, eventDate, eventTime } = dataset;
+                    if (!eventId || !eventDate || !eventTime) continue;
+
+                    const start = new Date(`${eventDate}T${eventTime}`).getTime();
+                    const key = `${eventId}:${eventDate}T${eventTime}`;
+                    if (start >= now && start - now <= windowMs && !notified.has(key) && !history[key]) {
+                        due.set(key, start);
+                    }
+                }
+                if (!due.size) return;
+
+                playbackPending = true;
+                try {
+                    audio.currentTime = 0;
+                    await audio.play();
+                    for (const [key, start] of due) notified.set(key, start);
+                    const latestHistory = Object.entries(readStorage(historyKey) || {});
+                    const activeHistory = latestHistory.filter(([, start]) => start >= now);
+                    writeStorage(historyKey, Object.fromEntries([...activeHistory, ...notified]));
+                } catch {
+                    return;
+                } finally {
+                    playbackPending = false;
+                }
+            }
+
+            preferences.addEventListener("change", () => {
+                writeStorage(preferenceKey, { enabled: sound.checked, minutes: leadTime.value });
+                checkUpcomingEvents();
             });
+            document.addEventListener("click", checkUpcomingEvents);
+            checkUpcomingEvents();
+            setInterval(checkUpcomingEvents, 30000);
+        })();
     </script>
 </main>
 {% endblock %}
