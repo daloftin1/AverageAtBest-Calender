@@ -6,7 +6,7 @@ const vm = require("node:vm");
 const template = readFileSync(require("node:path").join(__dirname, "templates/calendar.html"), "utf8");
 const script = template.match(/<script>([\s\S]+?)<\/script>/)[1];
 
-function loadCalendar(storage, { user = "1", minutesUntil = 10, blocked = false } = {}) {
+function loadCalendar(storage, { user = "1", minutesUntil = 10, blocked = false, holiday = false } = {}) {
     const now = new Date(2026, 10, 24, 12).getTime();
     const date = new Date(now + minutesUntil * 60000);
     const sound = {};
@@ -27,7 +27,7 @@ function loadCalendar(storage, { user = "1", minutesUntil = 10, blocked = false 
         } },
     };
     const row = {
-        dataset: {
+        dataset: holiday ? { profile: "holidays" } : {
             eventId: "123",
             eventDate: "2026-11-24",
             eventTime: date.toTimeString().slice(0, 8),
@@ -106,4 +106,15 @@ test("blocked playback leaves the reminder eligible", async () => {
     await page.tick();
     assert.equal(page.attempts(), 1);
     assert.equal(loadCalendar(storage).attempts(), 1);
+});
+
+test("a holiday entry never plays sound with reminders enabled", async () => {
+    const storage = new Map([
+        ["calendar-reminders:1:preferences", JSON.stringify({ enabled: true, minutes: "60" })],
+    ]);
+    const page = loadCalendar(storage, { holiday: true });
+    assert.equal(page.sound.checked, true);
+    await page.tick();
+    assert.equal(page.attempts(), 0);
+    assert.equal(storage.has("calendar-reminders:1:history"), false);
 });

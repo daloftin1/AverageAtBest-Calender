@@ -1,5 +1,5 @@
 import calendar
-from datetime import date
+from datetime import date, timedelta
 from collections import defaultdict
 from urllib.parse import urlencode
 
@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import AccountCreationForm, CalendarShareForm, EventForm, EventShareForm
+from .holidays import us_holidays
 from .models import CalendarShare, Event
 
 def register_view(request):
@@ -64,7 +65,20 @@ def calendar_url(profile):
 @login_required(login_url='/accounts/login/')
 def calendar_view(request):
     today = date.today()
-    profile = selected_profile(request)
+    profile = 'holidays' if request.GET.get('profile') == 'holidays' else selected_profile(request)
+    preference_key = f'calendar-holidays-{request.user.pk}'
+    if request.method == 'POST' and profile == 'all':
+        preference = request.POST.get('show_holidays')
+        if preference in ('0', '1'):
+            query = request.GET.urlencode()
+            url = reverse('calendar')
+            response = redirect(f'{url}?{query}' if query else url)
+            response.set_cookie(preference_key, preference, max_age=365 * 24 * 60 * 60,
+                                httponly=True, samesite='Lax', secure=request.is_secure())
+            return response
+    show_holidays = profile == 'holidays' or (
+        profile == 'all' and request.COOKIES.get(preference_key) != '0'
+    )
     try:
         selected_date = date.fromisoformat(request.GET.get('date', ''))
     except ValueError:
@@ -85,14 +99,17 @@ def calendar_view(request):
         Q(user__in=calendar_shares.values('owner'))
     ).select_related('user').distinct()
     all_visible = visible
-    upcoming_canon = (visible.filter(date__gte=today).values('date')
+    upcoming_canon = None if profile == 'holidays' else (visible.filter(date__gte=today).values('date')
                       .annotate(count=Count('id', distinct=True))
                       .filter(count__gte=3).order_by('date').first())
     if upcoming_canon:
         upcoming_canon['profiles'] = sorted(set(
             visible.filter(date=upcoming_canon['date']).values_list('profile', flat=True)
         ))
-    if profile != 'all':
+    if profile == 'holidays':
+        visible = visible.none()
+        all_visible = all_visible.none()
+    elif profile != 'all':
         visible = visible.filter(profile=profile)
     events = list(visible.filter(date=selected_date).order_by('id') if selected_date
                   else visible.filter(date__gte=today).order_by('date', 'id'))
@@ -102,6 +119,25 @@ def calendar_view(request):
     by_date = defaultdict(list)
     for event in month_events:
         by_date[event.date].append(event)
+    holidays_by_date = defaultdict(list)
+    agenda_holidays = []
+    if show_holidays:
+        month_start = displayed_month.replace(day=1)
+        month_end = displayed_month.replace(
+            day=calendar.monthrange(displayed_month.year, displayed_month.month)[1]
+        )
+        for holiday in us_holidays(month_start, month_end):
+            holidays_by_date[holiday.date].append(holiday.title)
+        if selected_date:
+            agenda_holidays = us_holidays(selected_date, selected_date)
+        else:
+            agenda_holidays = us_holidays(today, today + timedelta(days=365))
+
+    agenda = sorted(
+        [(event.date, {'event': event}) for event in events]
+        + [(holiday.date, {'holiday': holiday}) for holiday in agenda_holidays],
+        key=lambda item: item[0],
+    )
     weeks = []
     for week in calendar.Calendar(firstweekday=6).monthdayscalendar(displayed_month.year, displayed_month.month):
         cells = []
@@ -115,19 +151,25 @@ def calendar_view(request):
                 'number': day, 'events': day_events, 'count': len(day_events),
                 'markers': day_events[:2],
                 'profiles': sorted({event.profile for event in day_events}),
+                'holidays': holidays_by_date[cell_date],
                 'summary': '; '.join(f'{event.get_profile_display()}: {event.title}' for event in day_events),
             })
         weeks.append(cells)
     return render(request, 'calendar.html', {
         'events': events,
+        'agenda_size': len(agenda),
+        'day_agenda': [entry for _, entry in agenda],
+        'today_agenda': [entry for day, entry in agenda if day == today],
+        'upcoming_agenda': [entry for day, entry in agenda if day > today],
+        'show_holidays': show_holidays,
         'editable_event_ids': [event.id for event in events if event.user_id in editable_owners],
         'incoming_calendar_shares': calendar_shares,
         'today': today, 'weeks': weeks, 'active_profile': profile,
         'selected_date': selected_date, 'displayed_month': displayed_month,
         'previous_month': previous_month, 'next_month': next_month,
         'upcoming_canon': upcoming_canon,
-        'profile_label': dict(Event.Profile.choices).get(profile, 'All'),
-        'profiles': [('work', 'Work'), ('school', 'School'), ('personal', 'Personal'), ('all', 'ALL')],
+        'profile_label': dict([*Event.Profile.choices, ('holidays', 'Holidays')]).get(profile, 'All'),
+        'profiles': [*Event.Profile.choices, ('holidays', 'Holidays'), ('all', 'ALL')],
         'today_events': [event for event in events if event.date == today],
         'upcoming_events': [event for event in events if event.date > today],
     })

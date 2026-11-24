@@ -1,3 +1,4 @@
+import re
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
@@ -6,6 +7,7 @@ from django.test import TestCase
 from django.test import override_settings
 from django.urls import reverse
 
+from .holidays import us_holidays
 from .models import CalendarShare, Event
 
 
@@ -334,3 +336,110 @@ class CalendarReminderTests(TestCase):
         self.assertContains(response, '<option value="60" selected>60 minutes before</option>', html=True)
         self.assertContains(response, f'data-event-id="{event.pk}"')
         self.assertContains(response, 'data-event-time="12:34:00"')
+
+
+class HolidayCalendarTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('holiday-viewer')
+        self.client.force_login(self.user)
+        self.url = reverse('calendar')
+
+    def test_federal_holidays_include_fixed_floating_and_observed_dates(self):
+        for year, memorial_day, labor_day, thanksgiving in (
+            (2026, 25, 7, 26),
+            (2027, 31, 6, 25),
+        ):
+            with self.subTest(year=year):
+                entries = us_holidays(date(year, 1, 1), date(year, 12, 31))
+                names = {(entry.date, entry.title) for entry in entries}
+                self.assertEqual(len(names), len(entries))
+                for month, day, name in (
+                    (1, 1, "New Year's Day"),
+                    (5, memorial_day, 'Memorial Day'),
+                    (6, 19, 'Juneteenth National Independence Day'),
+                    (7, 4, 'Independence Day'),
+                    (9, labor_day, 'Labor Day'),
+                    (11, thanksgiving, 'Thanksgiving Day'),
+                    (12, 25, 'Christmas Day'),
+                ):
+                    self.assertIn((date(year, month, day), name), names)
+        entries = us_holidays(date(2026, 7, 3), date(2026, 7, 4))
+        self.assertEqual([entry.title for entry in entries], [
+            'Independence Day (observed)', 'Independence Day',
+        ])
+        entries = us_holidays(date(2021, 12, 31), date(2021, 12, 31))
+        self.assertEqual([entry.title for entry in entries], ["New Year's Day (observed)"])
+
+    def test_holidays_and_all_filters_render_expected_agenda_and_month(self):
+        day = date(2026, 7, 4)
+        Event.objects.create(user=self.user, title='Team meetup', date=day, profile='work')
+        for profile in ('holidays', 'all', 'work', 'school', 'personal'):
+            with self.subTest(profile=profile):
+                response = self.client.get(self.url, {'profile': profile, 'date': day})
+                self.assertContains(response, 'data-profile="holidays"')
+                cell = next(
+                    cell for week in response.context['weeks'] for cell in week if cell['date'] == day
+                )
+                if profile in ('holidays', 'all'):
+                    self.assertContains(response, '<h3>Independence Day</h3>', html=True)
+                    self.assertContains(response, 'July 4 · All day')
+                    self.assertEqual(cell['holidays'], ['Independence Day'])
+                else:
+                    self.assertNotContains(response, 'Independence Day')
+                    self.assertEqual(cell['holidays'], [])
+                if profile in ('all', 'work'):
+                    self.assertContains(response, 'Team meetup')
+                else:
+                    self.assertNotContains(response, 'Team meetup')
+        self.assertEqual(Event.objects.count(), 1)
+
+    def test_hide_preference_survives_reload_and_is_account_scoped(self):
+        url = self.url + '?profile=all&date=2026-12-25'
+        response = self.client.post(url, {'show_holidays': '0'}, follow=True)
+        self.assertRedirects(response, url)
+        self.assertNotContains(response, 'Christmas Day')
+        self.assertNotContains(self.client.get(url), 'Christmas Day')
+        self.assertContains(self.client.get(self.url, {
+            'profile': 'holidays', 'date': '2026-12-25',
+        }), 'Christmas Day')
+        other_user = User.objects.create_user('other-holiday-viewer')
+        self.client.force_login(other_user)
+        self.assertContains(self.client.get(url), 'Christmas Day')
+        self.client.force_login(self.user)
+        self.assertNotContains(self.client.get(url), 'Christmas Day')
+        self.assertContains(self.client.post(url, {'show_holidays': '1'}, follow=True), 'Christmas Day')
+
+    def test_holiday_entries_have_no_actions_or_reminder_metadata(self):
+        day = date(2026, 12, 25)
+        response = self.client.get(self.url, {'profile': 'holidays', 'date': day})
+        self.assertContains(response, 'Christmas Day')
+        self.assertNotContains(response, 'aria-label="Edit event:')
+        self.assertNotContains(response, 'aria-label="Share event:')
+        self.assertNotContains(response, 'data-event-id=')
+        self.assertNotContains(response, 'data-event-time=')
+        self.assertNotContains(response, '>Add event</a>')
+        self.assertFalse(Event.objects.exists())
+
+
+    def test_all_keeps_reminder_metadata_only_on_timed_personal_event(self):
+        day = date(2026, 12, 25)
+        event = Event.objects.create(
+            user=self.user, title='Family dinner', profile=Event.Profile.PERSONAL,
+            date=day, time='18:30:00',
+        )
+
+        response = self.client.get(self.url, {'profile': 'all', 'date': day})
+
+        self.assertEqual(response.status_code, 200)
+        cards = re.findall(r'<article\b([^>]*)>(.*?)</article>', response.content.decode(), re.S)
+        holiday_cards = [attrs for attrs, body in cards if '<h3>Christmas Day</h3>' in body]
+        self.assertEqual(len(holiday_cards), 1)
+        for attribute in ('data-event-id', 'data-event-date', 'data-event-time'):
+            self.assertNotIn(attribute, holiday_cards[0])
+        reminder_cards = [(attrs, body) for attrs, body in cards if 'data-event-id=' in attrs]
+        self.assertEqual(len(reminder_cards), 1)
+        attrs, body = reminder_cards[0]
+        self.assertIn('<h3>Family dinner</h3>', body)
+        self.assertIn(f'data-event-id="{event.pk}"', attrs)
+        self.assertIn('data-event-date="2026-12-25"', attrs)
+        self.assertIn('data-event-time="18:30:00"', attrs)

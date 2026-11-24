@@ -9,7 +9,7 @@
     </section>
     <div class="planner-layout">
         <section class="agenda" aria-labelledby="agenda-title" id="day-events">
-            <div class="agenda-heading"><h2 id="agenda-title">{{ profile_label }} events</h2><span class="event-total">{{ events|length }}</span></div>
+            <div class="agenda-heading"><h2 id="agenda-title">{{ profile_label }} events</h2><span class="event-total">{{ agenda_size }}</span></div>
             <div class="agenda-scroll" tabindex="0" role="region" aria-label="Scrollable events">
             {% if incoming_calendar_shares %}<p class="shared-calendars">Shared with you: {% for share in incoming_calendar_shares %}{{ share.owner.username }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
             {% if selected_date %}
@@ -17,15 +17,15 @@
                 <h3>{{ selected_date|date:'l, F j, Y' }}</h3>
                 <a href="?profile={{ active_profile }}" class="clear-day">Show today &amp; upcoming</a>
             </div>
-            {% include 'event_list.html' with event_group=events empty_message='No events on this day in this profile.' %}
+            {% include 'event_list.html' with event_group=day_agenda empty_message='No events on this day in this profile.' %}
             {% else %}
             <h3 class="section-label">Today</h3>
-            {% include 'event_list.html' with event_group=today_events empty_message='Nothing scheduled today.' %}
+            {% include 'event_list.html' with event_group=today_agenda empty_message='Nothing scheduled today.' %}
             <h3 class="section-label">Upcoming</h3>
-            {% include 'event_list.html' with event_group=upcoming_events empty_message='No upcoming events in this profile.' %}
+            {% include 'event_list.html' with event_group=upcoming_agenda empty_message='No upcoming events in this profile.' %}
             {% endif %}
 
-            <div id="reminderPreferences" data-user-id="{{ user.pk }}">
+            <div id="reminderPreferences"{% if active_profile == 'holidays' %} hidden{% endif %} data-user-id="{{ user.pk }}">
                 <label><input type="checkbox" id="enableNotifications"> Sound notifications</label>
                 <label for="reminderMinutes">Remind me</label>
                 <select id="reminderMinutes">
@@ -72,9 +72,11 @@
                     </div>
                 </article>
                 {% empty %}
+                {% if active_profile != 'holidays' and not agenda_size %}
                 <div class="empty-state">
                     <p>No events yet.</p>
                 </div>
+                {% endif %}
                 {% endfor %}
             </div>
         </section>
@@ -86,6 +88,15 @@
                 </a>
                 {% endfor %}
             </nav>
+            {% if active_profile == 'all' %}
+            <form method="post" class="holiday-preference">
+                {% csrf_token %}
+                <button class="button button-compact button-secondary" type="submit" name="show_holidays"
+                        value="{% if show_holidays %}0{% else %}1{% endif %}">
+                    {% if show_holidays %}Hide holidays{% else %}Show holidays{% endif %}
+                </button>
+            </form>
+            {% endif %}
             <section class="month-card" aria-labelledby="month-title">
                 <div class="calendar-toolbar">
                 <nav class="month-navigation" aria-label="Month navigation">
@@ -96,7 +107,9 @@
                     </div>
                 </nav>
         <div class="calendar-actions">
+            {% if active_profile != 'holidays' %}
             <a class="button button-compact button-primary" href="{% url 'add_event' %}?profile={{ active_profile }}">Add event</a>
+            {% endif %}
             <a class="button button-compact button-secondary" href="{% url 'share_calendar' %}">Share calendar</a>
         </div>
                 </div>
@@ -107,22 +120,20 @@
                     {% else %}
                     <a class="day day-link{% if day.count >= 3 %} canon-day{% endif %}{% if day.is_today %} today{% endif %}{% if day.selected %} selected-day{% endif %}" data-profile="{{ active_profile }}"
                        href="?profile={% if day.count >= 3 %}all{% else %}{{ active_profile }}{% endif %}&amp;date={{ day.date|date:'Y-m-d' }}#day-events"
-                       aria-label="{{ day.date|date:'F j, Y' }}: {{ day.count }} event{{ day.count|pluralize }}{% if day.selected %}, selected{% endif %}"
+                       aria-label="{{ day.date|date:'F j, Y' }}: {{ day.count }} event{{ day.count|pluralize }}{% if day.holidays %}, {{ day.holidays|join:", " }}{% endif %}{% if day.selected %}, selected{% endif %}"
                        {% if day.is_today %}aria-current="date"{% endif %}>
 
-                        {% if day.count >= 3 %}
-                        <span class="day-indicators" title="{{ day.summary }}">
-                            {% include 'astral_marker.html' with marker_profiles=day.profiles marker_date=day.number %}
-                            <span class="day-tooltip">{{ day.count }} events · {{ day.summary }}</span>
-                        </span>
-                        {% else %}
-                        <span>{{ day.number }}</span>
-                        {% if day.count %}
-                        <span class="day-indicators" title="{{ day.summary }}">
-                            {% for event in day.markers %}<i class="profile-dot" data-profile="{{ event.profile }}" aria-hidden="true"></i>{% endfor %}
-                            <span class="day-tooltip">{{ day.summary }}</span>
-                        </span>
-                        {% endif %}
+                        {% if day.count < 3 %}<span>{{ day.number }}</span>{% endif %}
+                        {% if day.count or day.holidays %}
+                            <span class="day-indicators" title="{{ day.summary }}{% if day.holidays %}{% if day.summary %} · {% endif %}{{ day.holidays|join:", " }}{% endif %}">
+                                {% if day.count >= 3 %}
+                                    {% include 'astral_marker.html' with marker_profiles=day.profiles marker_date=day.number %}
+                                {% else %}
+                                    {% for event in day.markers %}<i class="profile-dot" data-profile="{{ event.profile }}" aria-hidden="true"></i>{% endfor %}
+                                {% endif %}
+                                {% if day.holidays %}<i class="profile-dot holiday-dot" data-profile="holidays" aria-hidden="true"></i>{% endif %}
+                                <span class="day-tooltip">{% if day.count >= 3 %}{{ day.count }} events · {% endif %}{{ day.summary }}{% if day.holidays %}{% if day.summary %} · {% endif %}{{ day.holidays|join:", " }}{% endif %}</span>
+                            </span>
                         {% endif %}
                     </a>
                     {% endif %}
@@ -137,7 +148,7 @@
                     <span class="canon-details"><span class="canon-eyebrow">Upcoming canon event</span><strong>{{ upcoming_canon.date|date:'l, F j, Y' }}</strong><span class="canon-meta">{% if upcoming_canon.date == today %}Today · {% endif %}{{ upcoming_canon.count }} events · All profiles</span></span>
                     <span class="canon-open" aria-hidden="true">&#8599;</span>
                 </a>
-                {% else %}
+                {% elif active_profile != 'holidays' %}
                 <div class="upcoming-canon canon-empty"><span class="canon-details"><span class="canon-eyebrow">Upcoming canon event</span><span class="canon-meta">No days with 3+ events ahead.</span></span></div>
                 {% endif %}
             </section>
